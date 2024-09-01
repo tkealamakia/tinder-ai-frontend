@@ -1,0 +1,19 @@
+{
+  "plugins": [
+    "react"
+  ],
+  "rules": {
+    "quotes": [
+      "error",
+      "single",
+      {
+        "avoidEscape": true,
+        "allowTemplateLiterals": true
+      }
+    ],
+    "jsx-quotes": [
+      "error",
+      "prefer-double"
+    ]
+  }
+}
