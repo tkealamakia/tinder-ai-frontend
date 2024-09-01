@@ -1,32 +1,42 @@
 import './App.css';
 import { User, MessageCircle, X, Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const ProfileSelector = () => (
+const fetchRandomProfile = async () => {
+  const response = await fetch('http://localhost:8080/profiles/random');
+  if (!response.ok) {
+    throw new Error('Failed to fetch profile');
+  }
+  return response.json();
+}
+
+const ProfileSelector = ({ profile, onSwipe }) => (
+  profile ? (
   <div className="rounded-lg overflow-hidden bg-white shadow-lg">
     <div className="relative">
-      <img src="http://localhost:8080/images/364cfc84-550f-4b0d-91fa-e7b7b6c3f92e.jpg" />
+      <img src={"http://localhost:8080/images/" + profile.imageUrl} />
       <div className="absolute bottom-0 left-0 right-0 text-white p-4 bg-gradient-to-t from-black ">
-        <h2 className="text-3xl font-bold">Jane Doe, 30</h2>
+        <h2 className="text-3xl font-bold">{profile.firstName} {profile.lastName}, {profile.age}</h2>
       </div>
     </div>
     <div className="p-4">
-      <p className="text-gray-600">Hi I work at BYON and need a new job!</p>
+      <p className="text-gray-600">{profile.bio}</p>
     </div>
     <div className="p-4 flex justify-center space-x-4">
       <button className="bg-red-500 rounded-full p-4 text-white hover:bg-red-700"
-        onClick={() => console.log("left")}>
+        onClick={() => onSwipe("left")}>
         <X size={24} />
       </button>
       <button className="bg-green-500 rounded-full p-4 text-white hover:bg-green-700"
-        onClick={() => console.log("right")}>
+        onClick={() => onSwipe("right")}>
         <Heart size={24} />
       </button>
     </div>
   </div>
+  ) : (<div>Loading...</div>)
 );
 
-const MatchesList = () => (
+const MatchesList = ({ onSelectMatch }) => (
   <div className="rounded-lg shadow-lg p-4">
     <h2 className="text-2xl font-bold mb-4">Matches</h2>
     <ul>
@@ -36,7 +46,10 @@ const MatchesList = () => (
           { id: 2, firstName: 'Samantha', lastName: 'Jones', imageUrl: 'http://localhost:8080/images/0eaa5932-be8c-48b0-b2b1-8dfe41002995.jpg' }
         ].map(match => (
           <li key={match.id} className="mb-2">
-            <button className="w-full hover:bg-gray-100 rounded flex item-center">
+            <button 
+              className="w-full hover:bg-gray-100 rounded flex item-center"
+              onClick={() => onSelectMatch()}
+            >
               <img src={match.imageUrl} className="w-16 h-16 rounded-full mr-3 object-cover" />
               <span>
                 <h3 className="font-bold">{match.firstName} {match.lastName}</h3>
@@ -51,6 +64,13 @@ const MatchesList = () => (
 
 const ChatScreen = () => {
   const [input, setInput] = useState('');
+  
+  const handleSend = () => {
+    if (input.trim()) {
+      console.log(input);
+      setInput('');
+    }
+  }
 
   return (
     <div className="rounded-lg shadow-lg p-4">
@@ -85,7 +105,7 @@ const ChatScreen = () => {
         />
         <button
           className="bg-blue-500 text-white rounded p-2"
-          onClick={() => console.log(input)}
+          onClick={handleSend}
         >Send</button>
       </div>
     </div>
@@ -94,14 +114,35 @@ const ChatScreen = () => {
 
 function App() {
 
-  const [currentScreen, setCurrentScreen] = useState('chat');
+  const loadRandomProfile = async () => {
+    try {
+      const profile = await fetchRandomProfile();
+      setCurrentProfile(profile);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  useEffect(() => {
+    loadRandomProfile();
+  }, [] );
+
+  const [currentScreen, setCurrentScreen] = useState('profile');
+  const [currentProfile, setCurrentProfile] = useState(null);
+
+  const onSwipe = (direction) => {
+    if (direction === 'right') {
+      console.log('Liked');
+    }
+    loadRandomProfile();
+  }
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'profile':
-        return <ProfileSelector />;
+        return <ProfileSelector profile={currentProfile} onSwipe={onSwipe}/>;
       case 'matches':
-        return <MatchesList />;
+        return <MatchesList onSelectMatch={() => setCurrentScreen('chat')} />;
       case 'chat':
         return <ChatScreen />;
     }
